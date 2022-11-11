@@ -24,6 +24,8 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
 
     double max_val = 0.0;               // value for finding overshoot
     bool tr_flag = true;                // latch flag for finding Tr
+    bool tr_flag_10perc = true;         // latch flag for finding 10% reach time
+    int tr_10perc = 0.0;                // time when step response reached 10%
 
     // simulation loop
     for (int n=3; n<N+3; n++) {
@@ -38,8 +40,12 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
             y[n-3]*(-8*f0 + 4*T*f1 - 2*T*T*f2 + T*T*T*f3)
             ) / (8*f0 + 4*T*f1 + 2*T*T*f2 + T*T*T*f3);
         y.push_back(y_n);
-        if (y_n >= 1.0 && tr_flag) {    // rise time detection latch
-            result_params.Tr = n*T;
+        if (y_n >= 0.1 && tr_flag_10perc) { // 10 % rise time latch
+            tr_10perc = (n-3)*T;            // n-3 because of 3 initial samples
+            tr_flag_10perc = false;
+        }
+        if (y_n >= 0.9 && tr_flag) {    // rise time detection latch
+            result_params.Tr = ((n-3)*T) - tr_10perc;   // 90% rise time - 10% rise time
             tr_flag = false;
         }
         if (max_val < y_n) {            // updating maximum value so far
@@ -50,7 +56,7 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
     // T5s search
     for (int i=(int)y.size(); i>0; i--) {
         if (abs(y[i] - 1.0) <= 0.05) {
-            result_params.T5s = i*T;
+            result_params.T5s = (i-3)*T;
         } else {
             break;
         }

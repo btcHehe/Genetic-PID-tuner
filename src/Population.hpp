@@ -32,6 +32,9 @@ class Population {
             }
         } /* end of Population() */
 
+        /** @brief - Method implementing entity selection mechanism */
+        void selection();
+
         /** @brief - Method implementing arithmetic crossing of entities in population; returns children of current population */
         void crossing();
 

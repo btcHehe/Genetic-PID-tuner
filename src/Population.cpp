@@ -1,5 +1,11 @@
 #include "Population.hpp"
 
+/** @brief - Method implementing entity selection mechanism */
+void Population::selection() {
+
+} /* end of selection() */
+
+
 /** @brief - Method implementing arithmetic crossing of entities in population; returns children of current population */
 void Population::crossing() {
     std::vector<Entity> population_copy = this->specimen_group;
@@ -32,6 +38,7 @@ void Population::crossing() {
         this->children[i+1] = Entity(p1_child[0], p1_child[1], p1_child[2]);
     }
 } /* end of crossing() */
+
 
 /** @brief - Method implementing equal-value fenotype mutation of entities in population */
 void Population::mutation() {
