@@ -1,8 +1,7 @@
-#include "Entity.hpp"
+#include "Population.hpp"
 
 int main() {
-    Entity e;
-    e.simulate(0.001, 20, true);
-
+    Population p(10);
+    p.crossing();
     return 0;
 }
