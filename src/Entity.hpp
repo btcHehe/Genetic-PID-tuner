@@ -1,13 +1,14 @@
 #ifndef ENTITY_HPP
 #define ENTITY_HPP
 
-#include "Sim_params.hpp"
 #include <vector>
 #include <string>
 #include <fstream>
 #include <complex.h>
 #include <gsl/gsl_complex.h>
 #include <gsl/gsl_poly.h>
+#include "Sim_params.hpp"
+#include "constants.hpp"
 
 /*! Class implementing specimen of the population of solutions */
 class Entity {
@@ -51,11 +52,11 @@ class Entity {
         double kd;                  // differential gain
         double ki;                  // integral gain
         // plant transfer function parameters
-        double a0 = 1.24;
-        double a1 = 2.61;
-        double b0 = 1.2;
-        double b1 = 2.11;
-        double b2 = 4.17;
+        double a0 = A0;
+        double a1 = A1;
+        double b0 = B0;
+        double b1 = B1;
+        double b2 = B2;
 };
 
 #endif

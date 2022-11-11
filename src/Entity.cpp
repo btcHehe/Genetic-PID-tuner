@@ -9,8 +9,13 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
     Sim_params result_params;
     double T = sample_t;
     int N = sim_t/T;                                // number of simulation steps
-    std::vector<double> y = {0.0, 0.0, 0.0};        // initial conditions of output (y[n-3], y[n-2], y[n-1])
-    std::vector<double> u = {0.0, 0.0, 0.0};        // initial conditions of input (u[n-3], u[n-2], u[n-1])
+    std::vector<double> y; 
+    std::vector<double> u;
+
+    for (int j=0; j<INIT_SAMPLE_N; j++) {
+        y.push_back(0.0);                           // initial conditions of output (y[n-3], y[n-2], y[n-1])
+        u.push_back(0.0);                           // initial conditions of input (u[n-3], u[n-2], u[n-1])
+    }
 
     // difference equation coefficients
     double h0 = this->a1*this->kd;
@@ -28,8 +33,8 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
     int tr_10perc = 0.0;                // time when step response reached 10%
 
     // simulation loop
-    for (int n=3; n<N+3; n++) {
-        u.push_back(1.0);
+    for (int n=INIT_SAMPLE_N; n<N+INIT_SAMPLE_N; n++) {
+        u.push_back(1.0);               // unit step input
         double y_n = (
             u[n]*(8*h0 + 4*T*h1 + 2*T*T*h2 + T*T*T*h3) +
             u[n-1]*(-24*h0 - 4*T*h1 + 2*T*T*h2 + 3*T*T*T*h3) + 
@@ -40,15 +45,15 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
             y[n-3]*(-8*f0 + 4*T*f1 - 2*T*T*f2 + T*T*T*f3)
             ) / (8*f0 + 4*T*f1 + 2*T*T*f2 + T*T*T*f3);
         y.push_back(y_n);
-        if (y_n >= 0.1 && tr_flag_10perc) { // 10 % rise time latch
-            tr_10perc = (n-3)*T;            // n-3 because of 3 initial samples
+        if (y_n >= 0.1 && tr_flag_10perc) {                         // 10 % rise time latch
+            tr_10perc = (n-INIT_SAMPLE_N)*T;                        // n-INIT_SAMPLE_N because of INIT_SAMPLE_N initial samples
             tr_flag_10perc = false;
         }
-        if (y_n >= 0.9 && tr_flag) {    // rise time detection latch
-            result_params.Tr = ((n-3)*T) - tr_10perc;   // 90% rise time - 10% rise time
+        if (y_n >= 0.9 && tr_flag) {                                // rise time detection latch
+            result_params.Tr = ((n-INIT_SAMPLE_N)*T) - tr_10perc;   // 90% rise time - 10% rise time
             tr_flag = false;
         }
-        if (max_val < y_n) {            // updating maximum value so far
+        if (max_val < y_n) {                                        // updating maximum value so far
             max_val = y_n;
         }
     }
@@ -56,7 +61,7 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
     // T5s search
     for (int i=(int)y.size(); i>0; i--) {
         if (abs(y[i] - 1.0) <= 0.05) {
-            result_params.T5s = (i-3)*T;
+            result_params.T5s = (i-INIT_SAMPLE_N)*T;
         } else {
             break;
         }
