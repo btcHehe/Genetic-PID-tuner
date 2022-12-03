@@ -2,7 +2,7 @@
 
 /** @brief - Method implementing entity selection mechanism */
 void Population::selection() {
-
+    this->specimen_group = this->children;
 } /* end of selection() */
 
 
@@ -40,7 +40,63 @@ void Population::crossing() {
 } /* end of crossing() */
 
 
-/** @brief - Method implementing equal-value fenotype mutation of entities in population */
-void Population::mutation() {
-
+/** @brief - Method implementing equal-value fenotype mutation of entities in population 
+ * @param mutation_chance - probability of mutation happening (default is 10%)
+ * @param min_val - minimum random value of mutated variable
+ * @param max_val - maximum random value of mutated variable
+ */ 
+void Population::mutation(double  mutation_chance, double min_val, double max_val) {
+    this->dist = std::uniform_real_distribution<double>(min_val, max_val);                  // distribution object
+    std::uniform_int_distribution<int> param_dist(0, 3*100*mutation_chance - 1);            // 3/(3*100*mutation_chance) -> chance for mutation
+    for (int i=0; i<(int)this->children.size(); i++) {
+        int rnd_param = param_dist(this->rand_gen);
+        switch (rnd_param)
+        {
+        case 0:                                                                             // mutation of kp
+            this->children[i].set_kp(this->dist(rand_gen));
+            break;
+        case 1:                                                                             // mutation of kd
+            this->children[i].set_kd(this->dist(rand_gen));
+            break;
+        case 2:                                                                             // mutation of ki
+            this->children[i].set_ki(this->dist(rand_gen));
+            break;
+        default:                                                                            // mutation won't happen
+            break;
+        }
+    }
 } /* end of mutation() */
+
+
+/** @brief - Method filling vector specimen_evaluation with simulation parameters of every specimen group entity */
+void Population::simulate_population() {
+    std::vector<Sim_params> v;
+    for (int i=0; i<(int)this->specimen_group.size(); i++) {
+        v.push_back(this->specimen_group[i].simulate(dt, Ts));
+    }
+    this->specimen_evaluation = v;
+} /* end of simulate_population() */
+
+
+/** @brief - Method for finding best entity in population 
+ * @param Tr_goal - rise time goal value
+ * @param Os_goal - overshoot goal value
+ * @param T5s_goal - 5% settling time goal value
+ */
+Entity Population::get_best_member(double Tr_goal, double Os_goal, double T5s_goal) {
+    double min_error = 1000000.0;
+    int min_error_index = 0;
+
+    for (int i=0; i<(int)this->specimen_group.size(); i++) {
+        double Tr_error = this->specimen_evaluation[i].Tr - Tr_goal;
+        double Os_error = this->specimen_evaluation[i].Os - Os_goal;
+        double T5s_error = this->specimen_evaluation[i].T5s - T5s_goal;
+        double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+
+        if (J < min_error) {
+            min_error_index = i;
+            min_error = J;
+        }
+    }
+    return this->specimen_group[min_error_index];
+} /* end of get_best() */

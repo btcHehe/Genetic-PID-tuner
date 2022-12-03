@@ -25,10 +25,10 @@ class Entity {
          * @param sim_t - simulation duration time [s]
          * @param save_results - flag for saving step response results to csv file
         */
-        Sim_params simulate(double sample_t, double sim_t, bool save_results=false);
+        Sim_params simulate(double sample_t, double sim_t, bool save_results=false, std::string filename="y.csv");
 
         /** @brief - save simulation results to .csv file
-         * @param  y - output vector to be saved
+         * @param y - output vector to be saved
          * @param filename - csv file name
         */
         void save_sim(std::vector<double> y, std::string filename);

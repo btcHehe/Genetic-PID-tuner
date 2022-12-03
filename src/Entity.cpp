@@ -5,7 +5,7 @@
  * @param sim_t - simulation duration time [s]
  * @param save_results - flag for saving step response results to csv file
 */
-Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
+Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results, std::string filename) {
     Sim_params result_params;
     double T = sample_t;
     int N = sim_t/T;                                // number of simulation steps
@@ -72,7 +72,7 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results) {
 
     // optional response saving for debug
     if (save_results)
-        this->save_sim(y, "y.csv");
+        this->save_sim(y, filename);
 
     return result_params;
 } /* end of simulate() */
