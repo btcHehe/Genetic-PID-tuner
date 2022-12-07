@@ -1,6 +1,11 @@
 #ifndef ENTITY_HPP
 #define ENTITY_HPP
 
+/*
+    FILE: Entity.hpp
+    DESCRIPTION: Class Entity definition. Class implements single entity of population of genetic algorithm. Entity is described by PID controller gains and is able to perform simulation.
+*/
+
 #include <vector>
 #include <string>
 #include <fstream>

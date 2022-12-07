@@ -1,5 +1,16 @@
 #include "Entity.hpp"
 
+/*
+    FILE: Entity.cpp
+    DESCRIPTION: Class Entity method definitions. Methods are implementing simulation of dynamic system, stability check and other usefull actions.
+*/
+
+/*  -------------------------------------------------------------------------
+    |                                                                       |
+    |                           PUBLIC METHODS                              |
+    |                                                                       |
+    ------------------------------------------------------------------------- */
+
 /** @brief - step response analysis using bilinear transform method 
  * @param sample_t - sampling time (timestep of simulation) [s]
  * @param sim_t - simulation duration time [s]

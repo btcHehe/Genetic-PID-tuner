@@ -1,11 +1,17 @@
 #ifndef CONSTANTS_HPP
 #define CONSTANTS_HPP
 
+/*
+    FILE: constants.hpp
+    DESCRIPTION: File containing macros of constants used to parametrize genetic algorithm and plant transfer function.
+*/
+
 /* Plant transfer function coefficients 
         A0 + A1*s
   ----------------------
     B0 + B1*s + B2*s^2
 */
+
 #define A0 1.24
 #define A1 0.0                  // 2.61 is interesting
 #define B0 1.2

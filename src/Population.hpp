@@ -1,10 +1,16 @@
 #ifndef POPULATION_HPP
 #define POPULATION_HPP
 
+/*
+    FILE: Population.hpp
+    DESCRIPTION: Class Population definition. Class represents population of genetic algorithms on which genetic operations are performed.
+*/
+
 #include <vector>
 #include <random>
-#include <gsl/gsl_vector.h>
 #include <iostream>
+#include <algorithm>
+#include <gsl/gsl_vector.h>
 #include "Entity.hpp"
 #include "utils.hpp"
 
@@ -45,15 +51,27 @@ class Population {
          */
         void mutation(double mutation_chance, double min_val=0.0, double max_val=50.0);
 
+        /** @brief - Method for replacment some entities of previus population with children
+         * @param rep_num - number of entities to replace
+         */
+        void replacement(int rep_num);
+
         /** @brief - Method filling vector specimen_evaluation with simulation parameters of every specimen group entity */
         void simulate_population();
 
         /** @brief - Method for finding best entity in population 
-        * @param Tr_goal - rise time goal value
-        * @param Os_goal - overshoot goal value
-        * @param T5s_goal - 5% settling time goal value
-        */
+         * @param Tr_goal - rise time goal value
+         * @param Os_goal - overshoot goal value
+         * @param T5s_goal - 5% settling time goal value
+         */
         Entity get_best_member(double Tr_goal, double Os_goal, double T5s_goal);
+
+        /** @brief - Method for calculation mean adaptation measure value 
+         * @param Tr_goal - rise time goal value
+         * @param Os_goal - overshoot goal value
+         * @param T5s_goal - 5% settling time goal value
+         */
+        double get_mean_adaptation(double Tr_goal, double Os_goal, double T5s_goal);
     // private:
         std::vector<Entity> specimen_group;                         // group of entities
         std::vector<Entity> children;                               // current population children

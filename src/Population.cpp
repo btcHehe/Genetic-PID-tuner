@@ -1,5 +1,24 @@
 #include "Population.hpp"
 
+/*
+    FILE: Population.cpp
+    DESCRIPTION: Class Population method definitions. Methods are implementing activities of genetic algorithm.
+*/
+
+
+/*  -------------------------------------------------------------------------
+    |                                                                       |
+    |                           PUBLIC METHODS                              |
+    |                                                                       |
+    ------------------------------------------------------------------------- */
+
+
+/*  -------------------------------------------------------------------------
+    |                                                                       |
+    |                           PRIVATE METHODS                             |
+    |                                                                       |
+    ------------------------------------------------------------------------- */
+
 /** @brief - Method implementing entity selection mechanism */
 void Population::selection() {
     this->specimen_group = this->children;
@@ -68,6 +87,19 @@ void Population::mutation(double  mutation_chance, double min_val, double max_va
 } /* end of mutation() */
 
 
+/** @brief - Method for replacment some entities of previus population with children 
+ * @param rep_num - number of entities to replace
+*/
+void Population::replacement(int rep_num) {
+    auto rep_dist = std::uniform_int_distribution<double>(0, this->specimen_group.size());                  // distribution object
+    std::random_shuffle(this->specimen_group.begin(), this->specimen_group.end(), this->rand_gen);          // shuffling entities in population
+    std::random_shuffle(this->children.begin(), this->children.end(), this->rand_gen);                      // shuffling children 
+    for (int i=0; i<rep_num; i++) {
+        this->specimen_group[i] = this->children[i];        // replacing N randomly selected (by shuffling) entities with N children
+    }
+} /* end of replacement() */
+
+
 /** @brief - Method filling vector specimen_evaluation with simulation parameters of every specimen group entity */
 void Population::simulate_population() {
     std::vector<Sim_params> v;
@@ -100,3 +132,22 @@ Entity Population::get_best_member(double Tr_goal, double Os_goal, double T5s_go
     }
     return this->specimen_group[min_error_index];
 } /* end of get_best() */
+
+
+/** @brief - Method for calculation mean adaptation measure value 
+ * @param Tr_goal - rise time goal value
+ * @param Os_goal - overshoot goal value
+ * @param T5s_goal - 5% settling time goal value
+*/
+double Population::get_mean_adaptation(double Tr_goal, double Os_goal, double T5s_goal) {
+    double mean_J = 0.0;
+    for (int i=0; i<(int)this->specimen_group.size(); i++) {
+        double Tr_error = this->specimen_evaluation[i].Tr - Tr_goal;
+        double Os_error = this->specimen_evaluation[i].Os - Os_goal;
+        double T5s_error = this->specimen_evaluation[i].T5s - T5s_goal;
+        double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+        mean_J += J;
+    }
+    mean_J /= this->specimen_group.size();
+    return mean_J;
+} /* end of get_mean_adaptation() */
