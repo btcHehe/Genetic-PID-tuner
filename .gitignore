@@ -1,4 +1,5 @@
-bin/
+bin/main.exe
+bin/main
 main.exe
 plot.py
 step_res_plant.jpg

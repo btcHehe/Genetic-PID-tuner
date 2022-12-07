@@ -12,22 +12,61 @@
     |                                                                       |
     ------------------------------------------------------------------------- */
 
+/** @brief - General method for running genetic algorithm. Returns best agent after rep_num algorithm iterations
+ * @param rep_num - number of entities to replace
+ * @param mutation_chance - probability of mutation happening (default is 10%)
+ * @param min_val - minimum random value of mutated variable
+ * @param max_val - maximum random value of mutated variable
+*/
+Entity Population::find_solution(int rep_num, double mutation_chance, double min_val, double max_val) {
+    this->simulate_population();
+    this->selection();
+    this->crossing();
+    this->mutation(mutation_chance, min_val, max_val);
+    this->replacement(rep_num);
+    return this->get_best_member();
+}
 
-/*  -------------------------------------------------------------------------
-    |                                                                       |
-    |                           PRIVATE METHODS                             |
-    |                                                                       |
-    ------------------------------------------------------------------------- */
 
-/** @brief - Method implementing entity selection mechanism */
+/** @brief - Method implementing entity selection for reproduction mechanism 
+*/
 void Population::selection() {
-    this->specimen_group = this->children;
+    this->calc_current_adapt_coeff();
+    // this->selected_group.clear();
+    this->selected_group = this->population;
+    // std::vector<double> adapt_meas_vec;     // vector of adaptation measure values
+    // std::vector<double> select_prob;        // vector of probabilities of selection
+    // std::vector<double> distr_func;         // vector of values of distribution function 
+    // double adapt_sum = 0.0;
+
+    // // creation of roulette
+    // for (int j=0; j<(int)this->population.size(); j++) {
+    //     double f = this->get_adapt_measure(this->population[j]);
+    //     adapt_meas_vec.push_back(f);
+    //     adapt_sum += f;
+    // }
+    // for (auto f : adapt_meas_vec) {
+    //     select_prob.push_back(f / adapt_sum);
+    // }
+    // double p_sum = 0.0;
+    // for (int k=0; k<(int)this->population.size(); k++) {
+    //     p_sum += select_prob[k];
+    //     distr_func.push_back(p_sum);
+    // }
+    // auto roulette_dist = std::uniform_real_distribution<double>(0.0, 1.0);                  // distribution object for roulette
+    // // spinning roulette N times
+    // for (int n=0; n<(int)this->population.size(); n++) {
+    //     double r = roulette_dist(this->rand_gen);
+    //     auto first_good = std::upper_bound(distr_func.begin(), distr_func.end(), r);
+    //     int index = first_good - distr_func.begin();
+    //     this->selected_group.push_back(this->population[index]);
+    // }
 } /* end of selection() */
 
 
 /** @brief - Method implementing arithmetic crossing of entities in population; returns children of current population */
 void Population::crossing() {
-    std::vector<Entity> population_copy = this->specimen_group;
+    std::vector<Entity> population_copy = this->selected_group;
     std::vector<Entity> pair_0;                                             // vector containing first entities of the pair
     std::vector<Entity> pair_1;                                             // vector containing second entities of the pair
     std::uniform_int_distribution<int> int_dist0(0, (int)population_copy.size());
@@ -64,7 +103,7 @@ void Population::crossing() {
  * @param min_val - minimum random value of mutated variable
  * @param max_val - maximum random value of mutated variable
  */ 
-void Population::mutation(double  mutation_chance, double min_val, double max_val) {
+void Population::mutation(double mutation_chance, double min_val, double max_val) {
     this->dist = std::uniform_real_distribution<double>(min_val, max_val);                  // distribution object
     std::uniform_int_distribution<int> param_dist(0, 3*100*mutation_chance - 1);            // 3/(3*100*mutation_chance) -> chance for mutation
     for (int i=0; i<(int)this->children.size(); i++) {
@@ -91,38 +130,41 @@ void Population::mutation(double  mutation_chance, double min_val, double max_va
  * @param rep_num - number of entities to replace
 */
 void Population::replacement(int rep_num) {
-    auto rep_dist = std::uniform_int_distribution<double>(0, this->specimen_group.size());                  // distribution object
-    std::random_shuffle(this->specimen_group.begin(), this->specimen_group.end(), this->rand_gen);          // shuffling entities in population
-    std::random_shuffle(this->children.begin(), this->children.end(), this->rand_gen);                      // shuffling children 
+    // auto rep_dist = std::uniform_int_distribution<int>(0, this->population.size());                     // distribution object
+    std::shuffle(this->population.begin(), this->population.end(), this->rand_gen);                     // shuffling entities in population
+    std::shuffle(this->children.begin(), this->children.end(), this->rand_gen);                         // shuffling children 
     for (int i=0; i<rep_num; i++) {
-        this->specimen_group[i] = this->children[i];        // replacing N randomly selected (by shuffling) entities with N children
+        this->population[i] = this->children[i];        // replacing N randomly selected (by shuffling) entities with N children
     }
 } /* end of replacement() */
 
 
+/*  -------------------------------------------------------------------------
+    |                                                                       |
+    |                           PRIVATE METHODS                             |
+    |                                                                       |
+    ------------------------------------------------------------------------- */
+
 /** @brief - Method filling vector specimen_evaluation with simulation parameters of every specimen group entity */
 void Population::simulate_population() {
     std::vector<Sim_params> v;
-    for (int i=0; i<(int)this->specimen_group.size(); i++) {
-        v.push_back(this->specimen_group[i].simulate(dt, Ts));
+    for (int i=0; i<(int)this->population.size(); i++) {
+        v.push_back(this->population[i].simulate(dt, Ts));
     }
     this->specimen_evaluation = v;
 } /* end of simulate_population() */
 
 
 /** @brief - Method for finding best entity in population 
- * @param Tr_goal - rise time goal value
- * @param Os_goal - overshoot goal value
- * @param T5s_goal - 5% settling time goal value
  */
-Entity Population::get_best_member(double Tr_goal, double Os_goal, double T5s_goal) {
+Entity Population::get_best_member() {
     double min_error = 1000000.0;
     int min_error_index = 0;
 
-    for (int i=0; i<(int)this->specimen_group.size(); i++) {
-        double Tr_error = this->specimen_evaluation[i].Tr - Tr_goal;
-        double Os_error = this->specimen_evaluation[i].Os - Os_goal;
-        double T5s_error = this->specimen_evaluation[i].T5s - T5s_goal;
+    for (int i=0; i<(int)this->population.size(); i++) {
+        double Tr_error = this->specimen_evaluation[i].Tr - this->goal_parameters.Tr;
+        double Os_error = this->specimen_evaluation[i].Os - this->goal_parameters.Os;
+        double T5s_error = this->specimen_evaluation[i].T5s - this->goal_parameters.T5s;
         double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
 
         if (J < min_error) {
@@ -130,24 +172,46 @@ Entity Population::get_best_member(double Tr_goal, double Os_goal, double T5s_go
             min_error = J;
         }
     }
-    return this->specimen_group[min_error_index];
+    return this->population[min_error_index];
 } /* end of get_best() */
 
 
 /** @brief - Method for calculation mean adaptation measure value 
- * @param Tr_goal - rise time goal value
- * @param Os_goal - overshoot goal value
- * @param T5s_goal - 5% settling time goal value
 */
-double Population::get_mean_adaptation(double Tr_goal, double Os_goal, double T5s_goal) {
+double Population::get_mean_adaptation() {
     double mean_J = 0.0;
-    for (int i=0; i<(int)this->specimen_group.size(); i++) {
-        double Tr_error = this->specimen_evaluation[i].Tr - Tr_goal;
-        double Os_error = this->specimen_evaluation[i].Os - Os_goal;
-        double T5s_error = this->specimen_evaluation[i].T5s - T5s_goal;
+    for (int i=0; i<(int)this->population.size(); i++) {
+        double Tr_error = this->specimen_evaluation[i].Tr - this->goal_parameters.Tr;
+        double Os_error = this->specimen_evaluation[i].Os - this->goal_parameters.Os;
+        double T5s_error = this->specimen_evaluation[i].T5s - this->goal_parameters.T5s;
         double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
         mean_J += J;
     }
-    mean_J /= this->specimen_group.size();
+    mean_J /= this->population.size();
     return mean_J;
 } /* end of get_mean_adaptation() */
+
+
+/** @brief - Method for calculation of adaptation measure of agent for current population 
+ * @param agent - member of population for which the adaptation measure have to be calculated
+ */
+double Population::get_adapt_measure(Entity agent) {
+    Sim_params agent_sim = agent.simulate(this->time_step, this->time_sim);
+    double Tr_error = agent_sim.Tr - this->goal_parameters.Tr;
+    double Os_error = agent_sim.Os - this->goal_parameters.Os;
+    double T5s_error = agent_sim.T5s - this->goal_parameters.T5s;
+    double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+    return this->adapt_coeff - J;            // adaptation measure for given agent of current populationj
+} /* end of get_adapt_measure() */
+
+
+/** @brief - Method for getting adaptation coefficient for current population */
+void Population::calc_current_adapt_coeff() {
+    Entity best_mem = this->get_best_member();
+    Sim_params best_sim = best_mem.simulate(this->time_step, this->time_sim);
+    double Tr_error = best_sim.Tr - this->goal_parameters.Tr;
+    double Os_error = best_sim.Os - this->goal_parameters.Os;
+    double T5s_error = best_sim.T5s - this->goal_parameters.T5s;
+    double Cmax = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+    this->adapt_coeff = Cmax;
+} /* end of calc_current_adapt_ceoff() */
