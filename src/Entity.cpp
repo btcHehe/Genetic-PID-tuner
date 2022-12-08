@@ -22,21 +22,28 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results, st
     int N = sim_t/T;                                // number of simulation steps
     std::vector<double> y; 
     std::vector<double> u;
+    std::vector<double> r;
 
     for (int j=0; j<INIT_SAMPLE_N; j++) {
-        y.push_back(0.0);                           // initial conditions of output (y[n-3], y[n-2], y[n-1])
-        u.push_back(0.0);                           // initial conditions of input (u[n-3], u[n-2], u[n-1])
+        y.push_back(0.0);                           // initial conditions of output (y[n-2], y[n-1])
+        u.push_back(0.0);                           // initial conditions of input (u[n-2], u[n-1])
+        r.push_back(0.0);                           // initial conditions of input (r[n-2], r[n-1])
     }
 
     // difference equation coefficients
-    double h0 = this->a1*this->kd;
-    double h1 = this->a0*this->kd + this->a1*this->kp;
-    double h2 = this->a0*this->kp + this->a1*this->ki;
-    double h3 = this->a0*this->ki;
-    double f0 = this->b2 + this->a1*this->kd;
-    double f1 = this->b1 + this->a0*this->kd + this->a1*this->kp;
-    double f2 = this->b0 + this->a0*this->kp + this->a1*this->ki;
-    double f3 = this->a0*this->ki;
+    double u0 = 2*T*this->a1 + T*T*this->a0;
+    double u1 = 2*T*T*this->a0;
+    double u2 = T*T*this->a0 - 2*T*this->a1;
+
+    double y0 = T*T*this->b0 + 2*T*this->b1 + 4*this->b2;
+    double y1 = 2*T*T*this->b0 - 8*this->b2;
+    double y2 = T*T*this->b0 - 2*T*this->b1 + 4*this->b2;
+
+    double e0 = 4*this->kd + 2*T*this->kp + T*T*this->ki;
+    double e1 = 2*T*T*this->ki - 8*this->kd;
+    double e2 = 4*this->kd + T*T*this->ki - 2*T*this->kp;
+
+    double div = y0 + u0*e0/(2*T);
 
     double max_val = 0.0;               // value for finding overshoot
     bool tr_flag = true;                // latch flag for finding Tr
@@ -45,17 +52,29 @@ Sim_params Entity::simulate(double sample_t, double sim_t, bool save_results, st
 
     // simulation loop
     for (int n=INIT_SAMPLE_N; n<N+INIT_SAMPLE_N; n++) {
-        u.push_back(1.0);               // unit step input
+        r.push_back(1.0);               // unit step input
         double y_n = (
-            u[n]*(8*h0 + 4*T*h1 + 2*T*T*h2 + T*T*T*h3) +
-            u[n-1]*(-24*h0 - 4*T*h1 + 2*T*T*h2 + 3*T*T*T*h3) + 
-            u[n-2]*(24*h0 - 4*T*h1 - 2*T*T*h2 + 3*T*T*T*h3) +
-            u[n-3]*(-8*h0 + 4*T*h1 - 2*T*T*h2 + T*T*T*h3) -
-            y[n-1]*(-24*f0 - 4*T*f1 + 2*T*T*f2 + 3*T*T*T*f3) -
-            y[n-2]*(24*f0 - 4*T*f1 - 2*T*T*f2 + 3*T*T*T*f3) -
-            y[n-3]*(-8*f0 + 4*T*f1 - 2*T*T*f2 + T*T*T*f3)
-            ) / (8*f0 + 4*T*f1 + 2*T*T*f2 + T*T*T*f3);
+            u[n-2]*(u2 + u0) +
+            u[n-1]*u1 +
+            r[n-2]*e2*u0/(2*T) +
+            r[n-1]*e1*u0/(2*T) + 
+            r[n]*e0*u0/(2*T) -
+            y[n-2]*(y2 + u0*e2/(2*T)) -
+            y[n-1]*(y1 + u0*e1/(2*T))
+        ) / div;
         y.push_back(y_n);
+
+        double u_n = (
+            2*T*u[n-2] +
+            r[n-2]*e2 +
+            r[n-1]*e1 +
+            r[n]*e0 -
+            y[n-2]*e2 -
+            y[n-1]*e1 -
+            y[n]*e0
+        ) / (2*T);
+        u.push_back(u_n);
+
         if (y_n >= 0.1 && tr_flag_10perc) {                         // 10 % rise time latch
             tr_10perc = (n-INIT_SAMPLE_N)*T;                        // n-INIT_SAMPLE_N because of INIT_SAMPLE_N initial samples
             tr_flag_10perc = false;
@@ -105,16 +124,13 @@ void Entity::save_sim(std::vector<double> y, std::string filename) {
 
 
 /** @brief - method for checking if such controller parameters destabilize system 
-* @param k_p - proposed proportional gain
-* @param k_d - proposed derivative gain
-* @param k_i - proposed integral gain
 */
-bool Entity::is_stable(double k_p, double k_d, double k_i) {
+bool Entity::is_stable() {
     double p1, p2, p3;          // system transfer function denominator coefficients: s^3 + p1*s^2 + p2*s + p3
-    double p0 = (this->b2 + this->a1*k_d);
-    p1 = (this->b1 + this->a0*k_d + this->a1*k_p)/p0;
-    p2 = (this->b0 + this->a0*k_p + this->a1*k_i)/p0;
-    p3 = this->a0*k_i/p0;
+    double p0 = (this->b2 + this->a1*this->kd);
+    p1 = (this->b1 + this->a0*this->kd + this->a1*this->kp)/p0;
+    p2 = (this->b0 + this->a0*this->kp + this->a1*this->ki)/p0;
+    p3 = this->a0*this->ki/p0;
     gsl_complex r1, r2, r3;     // complex roots of system transfer function denominator polynomial
     gsl_poly_complex_solve_cubic(p1, p2, p3, &r1, &r2, &r3);
     if (GSL_REAL(r1) >= 0.0 || GSL_REAL(r2) >= 0.0 || GSL_REAL(r3) >= 0.0) {   // system to be stable require all roots to be on left half of complex plane

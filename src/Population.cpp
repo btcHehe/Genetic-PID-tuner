@@ -20,7 +20,7 @@
 */
 Entity Population::find_solution(int rep_num, double mutation_chance, double min_val, double max_val) {
     this->simulate_population();
-    this->selection();
+    this->selection(rep_num);
     this->crossing();
     this->mutation(mutation_chance, min_val, max_val);
     this->replacement(rep_num);
@@ -29,11 +29,28 @@ Entity Population::find_solution(int rep_num, double mutation_chance, double min
 
 
 /** @brief - Method implementing entity selection for reproduction mechanism 
+ * @param rep_n - number of entities to reproduce
 */
-void Population::selection() {
+void Population::selection(int rep_n) {
     this->calc_current_adapt_coeff();
-    // this->selected_group.clear();
-    this->selected_group = this->population;
+    this->selected_group.clear();
+    // this->selected_group = this->population;
+
+    // sorting population by it's cost value (from best to worst)
+    this->simulate_population();
+    std::vector<double> cost_v = this->specimen_evaluation;     // specimen_evaluation has cost values corresponding to population members
+    std::vector<size_t> idx(cost_v.size());
+
+    std::iota(idx.begin(), idx.end(), 0);
+
+    // idx containing sorted indexes of cost_v elements sorted by cost value
+    std::stable_sort(idx.begin(), idx.end(), [&cost_v](size_t i1, size_t i2) {return cost_v[i1] < cost_v[i2];});
+
+    for (int i=0; i<rep_n; i++) {
+        int best_idx = idx[i];
+        // std::cout << best_idx << ";" << this->specimen_evaluation[best_idx] << std::endl;
+        this->selected_group.push_back(this->population[best_idx]);         // selecting rep_n best entities
+    }
     // std::vector<double> adapt_meas_vec;     // vector of adaptation measure values
     // std::vector<double> select_prob;        // vector of probabilities of selection
     // std::vector<double> distr_func;         // vector of values of distribution function 
@@ -95,6 +112,12 @@ void Population::crossing() {
         this->children[i] = Entity(p0_child[0], p0_child[1], p0_child[2]);
         this->children[i+1] = Entity(p1_child[0], p1_child[1], p1_child[2]);
     }
+
+    // std::cout << "cost\n";
+    // for (auto c: this->children) {
+    //     std::cout << this->get_cost(c) << " ";
+    // }
+    std::cout << std::endl;
 } /* end of crossing() */
 
 
@@ -130,11 +153,28 @@ void Population::mutation(double mutation_chance, double min_val, double max_val
  * @param rep_num - number of entities to replace
 */
 void Population::replacement(int rep_num) {
-    // auto rep_dist = std::uniform_int_distribution<int>(0, this->population.size());                     // distribution object
-    std::shuffle(this->population.begin(), this->population.end(), this->rand_gen);                     // shuffling entities in population
-    std::shuffle(this->children.begin(), this->children.end(), this->rand_gen);                         // shuffling children 
+    this->simulate_population();
+    std::vector<double> cost_v = this->specimen_evaluation;
+
+    std::vector<size_t> idx(this->specimen_evaluation.size());
+    std::iota(idx.begin(), idx.end(), 0);       // idx contains indexes from 0 to N
+
+    // std::cout << "\npre: \n";
+    // for (int i=0; i<(int)this->specimen_evaluation.size(); i++) {
+    //     std::cout << idx[i] << " ";
+    // }
+
+    // sorting indexes in idx corresponding to cost values (from smallest cost to highest)
+    std::stable_sort(idx.begin(), idx.end(), [&cost_v](size_t i1, size_t i2) {return cost_v[i1] < cost_v[i2];});
+
+    // std::cout << "\npost: \n";
+    // for (int i=0; i<(int)this->specimen_evaluation.size(); i++) {
+    //     std::cout << idx[i] << "," << this->specimen_evaluation[idx[i]] << " ";
+    // }
+
     for (int i=0; i<rep_num; i++) {
-        this->population[i] = this->children[i];        // replacing N randomly selected (by shuffling) entities with N children
+        int weak_idx = idx[i];
+        this->population[weak_idx] = this->children[i];        // replacing N randomly selected (by shuffling) entities with N children
     }
 } /* end of replacement() */
 
@@ -147,9 +187,9 @@ void Population::replacement(int rep_num) {
 
 /** @brief - Method filling vector specimen_evaluation with simulation parameters of every specimen group entity */
 void Population::simulate_population() {
-    std::vector<Sim_params> v;
+    std::vector<double> v;
     for (int i=0; i<(int)this->population.size(); i++) {
-        v.push_back(this->population[i].simulate(dt, Ts));
+        v.push_back(this->get_cost(this->population[i]));
     }
     this->specimen_evaluation = v;
 } /* end of simulate_population() */
@@ -162,10 +202,7 @@ Entity Population::get_best_member() {
     int min_error_index = 0;
 
     for (int i=0; i<(int)this->population.size(); i++) {
-        double Tr_error = this->specimen_evaluation[i].Tr - this->goal_parameters.Tr;
-        double Os_error = this->specimen_evaluation[i].Os - this->goal_parameters.Os;
-        double T5s_error = this->specimen_evaluation[i].T5s - this->goal_parameters.T5s;
-        double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+        double J = this->get_cost(this->population[i]);
 
         if (J < min_error) {
             min_error_index = i;
@@ -181,10 +218,7 @@ Entity Population::get_best_member() {
 double Population::get_mean_adaptation() {
     double mean_J = 0.0;
     for (int i=0; i<(int)this->population.size(); i++) {
-        double Tr_error = this->specimen_evaluation[i].Tr - this->goal_parameters.Tr;
-        double Os_error = this->specimen_evaluation[i].Os - this->goal_parameters.Os;
-        double T5s_error = this->specimen_evaluation[i].T5s - this->goal_parameters.T5s;
-        double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+        double J = this->get_cost(this->population[i]);
         mean_J += J;
     }
     mean_J /= this->population.size();
@@ -196,11 +230,7 @@ double Population::get_mean_adaptation() {
  * @param agent - member of population for which the adaptation measure have to be calculated
  */
 double Population::get_adapt_measure(Entity agent) {
-    Sim_params agent_sim = agent.simulate(this->time_step, this->time_sim);
-    double Tr_error = agent_sim.Tr - this->goal_parameters.Tr;
-    double Os_error = agent_sim.Os - this->goal_parameters.Os;
-    double T5s_error = agent_sim.T5s - this->goal_parameters.T5s;
-    double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+    double J = this->get_cost(agent);
     return this->adapt_coeff - J;            // adaptation measure for given agent of current populationj
 } /* end of get_adapt_measure() */
 
@@ -208,10 +238,34 @@ double Population::get_adapt_measure(Entity agent) {
 /** @brief - Method for getting adaptation coefficient for current population */
 void Population::calc_current_adapt_coeff() {
     Entity best_mem = this->get_best_member();
-    Sim_params best_sim = best_mem.simulate(this->time_step, this->time_sim);
-    double Tr_error = best_sim.Tr - this->goal_parameters.Tr;
-    double Os_error = best_sim.Os - this->goal_parameters.Os;
-    double T5s_error = best_sim.T5s - this->goal_parameters.T5s;
-    double Cmax = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+    double Cmax = this->get_cost(best_mem);
     this->adapt_coeff = Cmax;
 } /* end of calc_current_adapt_ceoff() */
+
+
+/** @brief - Method for calculating cost value for agent
+ * @param agent - member of population
+*/
+double Population::get_cost(Entity agent) {
+    Sim_params agent_sim = agent.simulate(this->time_step, this->time_sim);
+    double Tr_error;
+    double Os_error = agent_sim.Os - this->goal_parameters.Os;
+    double T5s_error;
+
+    // if (agent_sim.Tr < dt) {
+        // Tr_error = UNSTABLE_COST;
+    // } else 
+        Tr_error = agent_sim.Tr - this->goal_parameters.Tr;
+
+    // if (agent_sim.T5s < dt) {
+        // T5s_error = UNSTABLE_COST;
+    // } else 
+        T5s_error = agent_sim.T5s - this->goal_parameters.T5s;
+    
+    if (!agent.is_stable()) {
+        return UNSTABLE_COST;
+    } else {
+        double J = ((Tr_error * Tr_error) + (Os_error * Os_error) + (T5s_error * T5s_error)) / 3;
+        return J;
+    }
+}

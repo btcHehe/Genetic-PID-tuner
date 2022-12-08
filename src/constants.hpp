@@ -12,16 +12,17 @@
     B0 + B1*s + B2*s^2
 */
 
-#define A0 1.24
-#define A1 0.0                  // 2.61 is interesting
-#define B0 1.2
-#define B1 2.11
-#define B2 4.17
+#define A0 60.24
+#define A1 0.02
+#define B0 14.2
+#define B1 4.11
+#define B2 9.17
 
-#define INIT_SAMPLE_N 3         // number of initial samples for simulation
+#define INIT_SAMPLE_N 2         // number of initial samples for simulation
 
-#define dt 0.01                 // timestep for simulation [s]
-#define Ts 10.0                 // simulation time [s]
+#define dt 0.001                 // timestep for simulation [s]
+#define Ts 40.0                 // simulation time [s]
 
+#define UNSTABLE_COST 1000000.0
 
 #endif

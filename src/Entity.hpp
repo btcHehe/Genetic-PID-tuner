@@ -39,11 +39,8 @@ class Entity {
         void save_sim(std::vector<double> y, std::string filename);
 
         /** @brief - method for checking if such controller parameters destabilize system 
-         * @param k_p - proposed proportional gain
-         * @param k_d - proposed derivative gain
-         * @param k_i - proposed integral gain
         */
-        bool is_stable(double k_p, double k_d, double k_i);
+        bool is_stable();
 
         /* Getters and setters */
         void set_kp(double new_kp);

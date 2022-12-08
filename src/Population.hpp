@@ -10,6 +10,7 @@
 #include <random>
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 #include <gsl/gsl_vector.h>
 #include "Entity.hpp"
 #include "utils.hpp"
@@ -26,7 +27,7 @@ class Population {
          * @param dtime - time step of simulation of closed loop system [s]
          * @param tsim - duration of simulation [s]
          */
-        Population(double Tr_goal, double Os_goal, double T5s_goal, int N=50, double max_random=100.0, double dtime=0.01, double tsim=10.0) {
+        Population(double Tr_goal, double Os_goal, double T5s_goal, int N=50, double max_random=10.0, double dtime=0.01, double tsim=10.0) {
             // error checking
             if (N%2 != 0) {
                 throw std::invalid_argument("Odd size of population was set. Even required.");
@@ -35,9 +36,10 @@ class Population {
             // creating entities with random parameters
             for (int i=0; i<N; i++) {
                 Entity tmpE;
-                tmpE.set_kp(this->dist(this->rand_gen));
-                tmpE.set_kd(this->dist(this->rand_gen));
-                tmpE.set_ki(this->dist(this->rand_gen));
+                double r = this->dist(this->rand_gen);
+                tmpE.set_kp(0.1+(r/(1+r)));
+                tmpE.set_kd(0.0);
+                tmpE.set_ki(0.04*r);
                 this->population.push_back(tmpE);
                 this->children.push_back(tmpE);                                     // at the beginning children does not matter; filling for indexing purposes
             }
@@ -57,8 +59,9 @@ class Population {
         Entity find_solution(int rep_num, double mutation_chance=0.1, double min_val=0.0, double max_val=50.0);
 
         /** @brief - Method implementing entity selection mechanism 
+         * @param rep_n - number of entities to reproduce
         */
-        void selection();
+        void selection(int rep_n);
 
         /** @brief - Method implementing arithmetic crossing of entities in population; returns children of current population */
         void crossing();
@@ -93,11 +96,16 @@ class Population {
 
         /** @brief - Method for getting adaptation coefficient for current population */
         void calc_current_adapt_coeff();
+
+        /** @brief - Method for calculating cost value for agent
+         * @param agent - member of population
+        */
+        double get_cost(Entity agent);
     // private:
         std::vector<Entity> population;                             // population of entities
         std::vector<Entity> selected_group;                         // subpopulation of entities selected for reproduction
         std::vector<Entity> children;                               // current population children
-        std::vector<Sim_params> specimen_evaluation;                // vector of simulation results for every specimen_group member
+        std::vector<double> specimen_evaluation;                    // vector of cost values for every member of population
         std::default_random_engine rand_gen;                        // random entity parameters generator
         std::uniform_real_distribution<double> dist;                // distribution object
         double time_step;                                           // time step of simulation [s]
