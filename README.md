@@ -30,7 +30,7 @@ where
 
 - $f(x)$ - measure of adaptation for agent $x$
 - $C_{max}$ - coefficient greater or equal to maximum value of cost function in current population
-- $J$ - value of cost function for agent $x$
+- $J(x)$ - value of cost function for agent $x$
 
 ## Genetic algorithm
 Genes are coded in multiallelic manner (agent's parameters are stored in vector [$k_{p}$, $k_{d}$, $k_{i}$]). Every iteration of algorithm is made of couple phases: selection, crossing, mutation and replacement. The selection phase conducted with use of adaptation measure is done to eliminate poorly adapted agents from contributing to children pool.(-----------describe selection method----------). In the crossing phase the random pairs are made of part of population selected for crossing (this group's size must be even number) and their children are created by performing arithmetic crossing. After that the mutation phase (equal-value fenotype mutation) is done to introduce random changes in some agents' parameters in order to create more diversity in children population. The last is replacement phase where children are replacing randomly selected agents from previous generation. The algorithm is able to eliminate entities with parameters which cause close loop system instability.

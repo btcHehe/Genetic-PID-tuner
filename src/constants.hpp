@@ -12,9 +12,9 @@
     B0 + B1*s + B2*s^2
 */
 
-#define A0 60.24
+#define A0 40.24
 #define A1 0.02
-#define B0 14.2
+#define B0 4.2
 #define B1 4.11
 #define B2 9.17
 

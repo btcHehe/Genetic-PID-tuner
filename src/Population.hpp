@@ -39,7 +39,7 @@ class Population {
                 double r = this->dist(this->rand_gen);
                 tmpE.set_kp(0.1+(r/(1+r)));
                 tmpE.set_kd(0.0);
-                tmpE.set_ki(0.04*r);
+                tmpE.set_ki(0.04+(r/(1+r)));
                 this->population.push_back(tmpE);
                 this->children.push_back(tmpE);                                     // at the beginning children does not matter; filling for indexing purposes
             }
@@ -59,9 +59,8 @@ class Population {
         Entity find_solution(int rep_num, double mutation_chance=0.1, double min_val=0.0, double max_val=50.0);
 
         /** @brief - Method implementing entity selection mechanism 
-         * @param rep_n - number of entities to reproduce
         */
-        void selection(int rep_n);
+        void selection();
 
         /** @brief - Method implementing arithmetic crossing of entities in population; returns children of current population */
         void crossing();
@@ -89,14 +88,6 @@ class Population {
          */
         double get_mean_adaptation();
 
-        /** @brief - Method for calculation of adaptation measure for current population 
-         * @param agent - member of population for which the adaptation measure have to be calculated
-         */
-        double get_adapt_measure(Entity agent);
-
-        /** @brief - Method for getting adaptation coefficient for current population */
-        void calc_current_adapt_coeff();
-
         /** @brief - Method for calculating cost value for agent
          * @param agent - member of population
         */
@@ -110,7 +101,6 @@ class Population {
         std::uniform_real_distribution<double> dist;                // distribution object
         double time_step;                                           // time step of simulation [s]
         double time_sim;                                            // time of whole simulation [s]
-        double adapt_coeff;                                         // adaptation coefficient for current population
         Sim_params goal_parameters;                                 // goal parameters of genetic algorithm
 };
 

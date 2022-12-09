@@ -20,64 +20,47 @@
 */
 Entity Population::find_solution(int rep_num, double mutation_chance, double min_val, double max_val) {
     this->simulate_population();
-    this->selection(rep_num);
+    this->selection();
     this->crossing();
-    this->mutation(mutation_chance, min_val, max_val);
+    // this->mutation(mutation_chance, min_val, max_val);
     this->replacement(rep_num);
     return this->get_best_member();
 }
 
 
 /** @brief - Method implementing entity selection for reproduction mechanism 
- * @param rep_n - number of entities to reproduce
 */
-void Population::selection(int rep_n) {
-    this->calc_current_adapt_coeff();
+void Population::selection() {
     this->selected_group.clear();
-    // this->selected_group = this->population;
-
-    // sorting population by it's cost value (from best to worst)
     this->simulate_population();
-    std::vector<double> cost_v = this->specimen_evaluation;     // specimen_evaluation has cost values corresponding to population members
-    std::vector<size_t> idx(cost_v.size());
 
-    std::iota(idx.begin(), idx.end(), 0);
+    std::vector<double> adapt_meas_vec;     // vector of adaptation measure values
+    std::vector<double> select_prob;        // vector of probabilities of selection
+    std::vector<double> distr_func;         // vector of values of distribution function 
+    double adapt_sum = 0.0;
 
-    // idx containing sorted indexes of cost_v elements sorted by cost value
-    std::stable_sort(idx.begin(), idx.end(), [&cost_v](size_t i1, size_t i2) {return cost_v[i1] < cost_v[i2];});
-
-    for (int i=0; i<rep_n; i++) {
-        int best_idx = idx[i];
-        // std::cout << best_idx << ";" << this->specimen_evaluation[best_idx] << std::endl;
-        this->selected_group.push_back(this->population[best_idx]);         // selecting rep_n best entities
+    // creation of roulette
+    for (int j=0; j<(int)this->population.size(); j++) {
+        double f = this->get_cost(this->population[j]);
+        adapt_meas_vec.push_back(f);
+        adapt_sum += f;
     }
-    // std::vector<double> adapt_meas_vec;     // vector of adaptation measure values
-    // std::vector<double> select_prob;        // vector of probabilities of selection
-    // std::vector<double> distr_func;         // vector of values of distribution function 
-    // double adapt_sum = 0.0;
-
-    // // creation of roulette
-    // for (int j=0; j<(int)this->population.size(); j++) {
-    //     double f = this->get_adapt_measure(this->population[j]);
-    //     adapt_meas_vec.push_back(f);
-    //     adapt_sum += f;
-    // }
-    // for (auto f : adapt_meas_vec) {
-    //     select_prob.push_back(f / adapt_sum);
-    // }
-    // double p_sum = 0.0;
-    // for (int k=0; k<(int)this->population.size(); k++) {
-    //     p_sum += select_prob[k];
-    //     distr_func.push_back(p_sum);
-    // }
-    // auto roulette_dist = std::uniform_real_distribution<double>(0.0, 1.0);                  // distribution object for roulette
-    // // spinning roulette N times
-    // for (int n=0; n<(int)this->population.size(); n++) {
-    //     double r = roulette_dist(this->rand_gen);
-    //     auto first_good = std::upper_bound(distr_func.begin(), distr_func.end(), r);
-    //     int index = first_good - distr_func.begin();
-    //     this->selected_group.push_back(this->population[index]);
-    // }
+    for (auto f : adapt_meas_vec) {
+        select_prob.push_back(f * adapt_sum);
+    }
+    double p_sum = 0.0;
+    for (int k=0; k<(int)this->population.size(); k++) {
+        p_sum += select_prob[k];
+        distr_func.push_back(p_sum);
+    }
+    auto roulette_dist = std::uniform_real_distribution<double>(0.0, 1.0);                  // distribution object for roulette
+    // spinning roulette N times
+    for (int n=0; n<(int)this->population.size(); n++) {
+        double r = roulette_dist(this->rand_gen);
+        auto first_good = std::upper_bound(distr_func.begin(), distr_func.end(), r);
+        int index = first_good - distr_func.begin();
+        this->selected_group.push_back(this->population[index]);
+    }
 } /* end of selection() */
 
 
@@ -187,11 +170,13 @@ void Population::replacement(int rep_num) {
 
 /** @brief - Method filling vector specimen_evaluation with simulation parameters of every specimen group entity */
 void Population::simulate_population() {
-    std::vector<double> v;
+    this->specimen_evaluation.clear();
+    std::vector<double> v_cost;
     for (int i=0; i<(int)this->population.size(); i++) {
-        v.push_back(this->get_cost(this->population[i]));
+        v_cost.push_back(this->get_cost(this->population[i]));
     }
-    this->specimen_evaluation = v;
+
+    this->specimen_evaluation = v_cost;
 } /* end of simulate_population() */
 
 
@@ -217,30 +202,17 @@ Entity Population::get_best_member() {
 */
 double Population::get_mean_adaptation() {
     double mean_J = 0.0;
+    int N = 0;
     for (int i=0; i<(int)this->population.size(); i++) {
         double J = this->get_cost(this->population[i]);
+        if (J == UNSTABLE_COST)
+            continue;
         mean_J += J;
+        N++;
     }
-    mean_J /= this->population.size();
+    mean_J /= N;
     return mean_J;
 } /* end of get_mean_adaptation() */
-
-
-/** @brief - Method for calculation of adaptation measure of agent for current population 
- * @param agent - member of population for which the adaptation measure have to be calculated
- */
-double Population::get_adapt_measure(Entity agent) {
-    double J = this->get_cost(agent);
-    return this->adapt_coeff - J;            // adaptation measure for given agent of current populationj
-} /* end of get_adapt_measure() */
-
-
-/** @brief - Method for getting adaptation coefficient for current population */
-void Population::calc_current_adapt_coeff() {
-    Entity best_mem = this->get_best_member();
-    double Cmax = this->get_cost(best_mem);
-    this->adapt_coeff = Cmax;
-} /* end of calc_current_adapt_ceoff() */
 
 
 /** @brief - Method for calculating cost value for agent

@@ -7,3 +7,5 @@ y.csv
 best_found.csv
 init_best.csv
 f.m
+best_cost.csv
+mean_cost.csv
