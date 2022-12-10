@@ -15,16 +15,19 @@
 /** @brief - General method for running genetic algorithm. Returns best agent after rep_num algorithm iterations
  * @param rep_num - number of entities to replace
  * @param mutation_chance - probability of mutation happening (default is 10%)
- * @param min_val - minimum random value of mutated variable
- * @param max_val - maximum random value of mutated variable
 */
-Entity Population::find_solution(int rep_num, double mutation_chance, double min_val, double max_val) {
+double Population::find_solution(int rep_num, double mutation_chance) {
     this->simulate_population();
+    // std::cout << "Population: ";
+    // for (int i=0; i<(int)this->population.size(); i++) {
+    //     std::cout << "J:" << this->specimen_evaluation[i] << " kp:" << this->population[i].get_kp() << " kd:" << this->population[i].get_kd() << " ki:" << this->population[i].get_ki() <<std::endl;
+    // }
+    // std::cout << std::endl;
     this->selection();
     this->crossing();
-    // this->mutation(mutation_chance, min_val, max_val);
+    this->mutation(mutation_chance);
     this->replacement(rep_num);
-    return this->get_best_member();
+    return this->specimen_evaluation[this->get_best_member()];
 }
 
 
@@ -41,7 +44,7 @@ void Population::selection() {
 
     // creation of roulette
     for (int j=0; j<(int)this->population.size(); j++) {
-        double f = this->get_cost(this->population[j]);
+        double f = this->specimen_evaluation[j];
         adapt_meas_vec.push_back(f);
         adapt_sum += f;
     }
@@ -106,24 +109,21 @@ void Population::crossing() {
 
 /** @brief - Method implementing equal-value fenotype mutation of entities in population 
  * @param mutation_chance - probability of mutation happening (default is 10%)
- * @param min_val - minimum random value of mutated variable
- * @param max_val - maximum random value of mutated variable
  */ 
-void Population::mutation(double mutation_chance, double min_val, double max_val) {
-    this->dist = std::uniform_real_distribution<double>(min_val, max_val);                  // distribution object
+void Population::mutation(double mutation_chance) {
     std::uniform_int_distribution<int> param_dist(0, 3*100*mutation_chance - 1);            // 3/(3*100*mutation_chance) -> chance for mutation
     for (int i=0; i<(int)this->children.size(); i++) {
         int rnd_param = param_dist(this->rand_gen);
         switch (rnd_param)
         {
         case 0:                                                                             // mutation of kp
-            this->children[i].set_kp(this->dist(rand_gen));
+            this->children[i].set_kp(this->dist_kp(rand_gen));
             break;
         case 1:                                                                             // mutation of kd
-            this->children[i].set_kd(this->dist(rand_gen));
+            this->children[i].set_kd(this->dist_kd(rand_gen));
             break;
         case 2:                                                                             // mutation of ki
-            this->children[i].set_ki(this->dist(rand_gen));
+            this->children[i].set_ki(this->dist_ki(rand_gen));
             break;
         default:                                                                            // mutation won't happen
             break;
@@ -136,7 +136,7 @@ void Population::mutation(double mutation_chance, double min_val, double max_val
  * @param rep_num - number of entities to replace
 */
 void Population::replacement(int rep_num) {
-    this->simulate_population();
+    // this->simulate_population();
     std::vector<double> cost_v = this->specimen_evaluation;
 
     std::vector<size_t> idx(this->specimen_evaluation.size());
@@ -182,19 +182,19 @@ void Population::simulate_population() {
 
 /** @brief - Method for finding best entity in population 
  */
-Entity Population::get_best_member() {
+int Population::get_best_member() {
+    // this->simulate_population();
     double min_error = 1000000.0;
-    int min_error_index = 0;
+    int min_index = 0;
 
     for (int i=0; i<(int)this->population.size(); i++) {
-        double J = this->get_cost(this->population[i]);
-
+        double J = this->specimen_evaluation[i];
         if (J < min_error) {
-            min_error_index = i;
             min_error = J;
+            min_index = i;
         }
     }
-    return this->population[min_error_index];
+    return min_index;
 } /* end of get_best() */
 
 
@@ -204,7 +204,7 @@ double Population::get_mean_adaptation() {
     double mean_J = 0.0;
     int N = 0;
     for (int i=0; i<(int)this->population.size(); i++) {
-        double J = this->get_cost(this->population[i]);
+        double J = this->specimen_evaluation[i];
         if (J == UNSTABLE_COST)
             continue;
         mean_J += J;

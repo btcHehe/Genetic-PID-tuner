@@ -13,7 +13,7 @@
 */
 
 #define A0 40.24
-#define A1 0.02
+#define A1 5.02
 #define B0 4.2
 #define B1 4.11
 #define B2 9.17
@@ -21,7 +21,7 @@
 #define INIT_SAMPLE_N 2         // number of initial samples for simulation
 
 #define dt 0.001                 // timestep for simulation [s]
-#define Ts 40.0                 // simulation time [s]
+#define Ts 15.0                 // simulation time [s]
 
 #define UNSTABLE_COST 1000000.0
 
