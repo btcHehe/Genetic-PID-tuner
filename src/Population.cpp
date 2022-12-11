@@ -18,11 +18,6 @@
 */
 double Population::find_solution(int rep_num, double mutation_chance) {
     this->simulate_population();
-    // std::cout << "Population: ";
-    // for (int i=0; i<(int)this->population.size(); i++) {
-    //     std::cout << "J:" << this->specimen_evaluation[i] << " kp:" << this->population[i].get_kp() << " kd:" << this->population[i].get_kd() << " ki:" << this->population[i].get_ki() <<std::endl;
-    // }
-    std::cout << std::endl;
     this->selection();
     this->crossing();
     this->mutation(mutation_chance);
@@ -99,11 +94,6 @@ void Population::crossing() {
         this->children[i+1] = Entity(p1_child[0], p1_child[1], p1_child[2]);
     }
 
-    // std::cout << "cost\n";
-    // for (auto c: this->children) {
-    //     std::cout << this->get_cost(c) << " ";
-    // }
-    std::cout << std::endl;
 } /* end of crossing() */
 
 
@@ -142,18 +132,8 @@ void Population::replacement(int rep_num) {
     std::vector<size_t> idx(this->specimen_evaluation.size());
     std::iota(idx.begin(), idx.end(), 0);       // idx contains indexes from 0 to N
 
-    // std::cout << "\npre: \n";
-    // for (int i=0; i<(int)this->specimen_evaluation.size(); i++) {
-    //     std::cout << idx[i] << " ";
-    // }
-
     // sorting indexes in idx corresponding to cost values (from smallest cost to highest)
     std::stable_sort(idx.begin(), idx.end(), [&cost_v](size_t i1, size_t i2) {return cost_v[i1] > cost_v[i2];});
-
-    // std::cout << "\npost: \n";
-    // for (int i=0; i<(int)this->specimen_evaluation.size(); i++) {
-    //     std::cout << idx[i] << "," << this->specimen_evaluation[idx[i]] << " ";
-    // }
 
     for (int i=0; i<rep_num; i++) {
         int weak_idx = idx[i];
@@ -224,15 +204,8 @@ double Population::get_cost(Entity agent) {
     double Os_error = agent_sim.Os - this->goal_parameters.Os;
     double T5s_error;
 
-    // if (agent_sim.Tr < dt) {
-        // Tr_error = UNSTABLE_COST;
-    // } else 
-        Tr_error = agent_sim.Tr - this->goal_parameters.Tr;
-
-    // if (agent_sim.T5s < dt) {
-        // T5s_error = UNSTABLE_COST;
-    // } else 
-        T5s_error = agent_sim.T5s - this->goal_parameters.T5s;
+    Tr_error = agent_sim.Tr - this->goal_parameters.Tr;
+    T5s_error = agent_sim.T5s - this->goal_parameters.T5s;
     
     if (!agent.is_stable()) {
         return UNSTABLE_COST;

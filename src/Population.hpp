@@ -16,7 +16,7 @@
 #include "Entity.hpp"
 #include "utils.hpp"
 
-/* Class implementing population of entities */
+/*! Class implementing population of entities */
 class Population {
     public:
         /** @brief - Contructor of class Population; Initializes N entities with random parameters
