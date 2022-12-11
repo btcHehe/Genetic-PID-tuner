@@ -22,7 +22,7 @@ double Population::find_solution(int rep_num, double mutation_chance) {
     // for (int i=0; i<(int)this->population.size(); i++) {
     //     std::cout << "J:" << this->specimen_evaluation[i] << " kp:" << this->population[i].get_kp() << " kd:" << this->population[i].get_kd() << " ki:" << this->population[i].get_ki() <<std::endl;
     // }
-    // std::cout << std::endl;
+    std::cout << std::endl;
     this->selection();
     this->crossing();
     this->mutation(mutation_chance);
@@ -148,7 +148,7 @@ void Population::replacement(int rep_num) {
     // }
 
     // sorting indexes in idx corresponding to cost values (from smallest cost to highest)
-    std::stable_sort(idx.begin(), idx.end(), [&cost_v](size_t i1, size_t i2) {return cost_v[i1] < cost_v[i2];});
+    std::stable_sort(idx.begin(), idx.end(), [&cost_v](size_t i1, size_t i2) {return cost_v[i1] > cost_v[i2];});
 
     // std::cout << "\npost: \n";
     // for (int i=0; i<(int)this->specimen_evaluation.size(); i++) {
